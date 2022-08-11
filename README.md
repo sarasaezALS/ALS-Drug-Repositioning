@@ -1,5 +1,4 @@
 # ALS-Drug-Repositioning
-
 *************************************
 
 ## Introduction
