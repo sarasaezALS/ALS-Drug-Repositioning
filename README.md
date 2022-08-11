@@ -4,7 +4,8 @@
 
 ## Introduction
 
-Amyotrophic lateral sclerosis (ALS) is a devastating neurological disease with no cure. Human genetic discoveries have revealed many genetic loci associated with disease predisposition. These findings are fundamental because drug targets with genetic support are more likely to succeed in clinical trials. 
+Amyotrophic lateral sclerosis (ALS) is a devastating neurological disease with no cure. Human genetic findings are fundamental because drug targets with genetic support are more likely to succeed in clinical trials. 
+
 Here, we have developed a pipeline to prioritize drugs than can be repurposed for treating ALS based on genetics, transcriptomics, and cell-based drug perturbations. Our findings using this method were validated using health claim records from U.S. Medicare beneficiaries. 
 
 These computational methodologies represent a step forward in finding effective treatments for ALS and other neurological disorders.
