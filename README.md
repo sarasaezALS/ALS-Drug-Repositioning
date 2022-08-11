@@ -12,7 +12,7 @@ In conclusion, these computational methodologies represent a step forward in fin
 
 
 ## Overview
-These workflow follows three steps:
+
 
 **(1) Establishing the gene expression signature in ALS**
 
@@ -34,6 +34,10 @@ These workflow follows three steps:
 
 
 **(4) Replication using Electronic Health Records (EHR)**
+
+
+
+## Workflow
 
 ![Untitled copy copy-3](https://user-images.githubusercontent.com/49964975/184062845-314f41a5-8481-4d46-9ab0-9a65f26bfabe.png)
 
