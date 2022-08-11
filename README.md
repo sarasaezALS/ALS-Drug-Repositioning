@@ -16,6 +16,8 @@ In conclusion, these computational methodologies represent a step forward in fin
 ![Untitled copy copy-3](https://user-images.githubusercontent.com/49964975/184062845-314f41a5-8481-4d46-9ab0-9a65f26bfabe.png)
 
 
+## Worflow
+
 **(1) Establishing the gene expression signature in ALS**
 
 - A published GWAS study involving 29,612 patients with ALS and 122,656 controls (*Van Rheenen et al., 2021*)
