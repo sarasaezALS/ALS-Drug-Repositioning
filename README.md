@@ -34,7 +34,7 @@ These workflow follows three steps:
 
 
 **(4) Replication using Electronic Health Records (EHR)**
-
+![This is an image](/assets/images/electrocat.png)
 
 ## Available codes
 
