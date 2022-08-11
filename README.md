@@ -13,7 +13,9 @@ These computational methodologies represent a step forward in finding effective 
 
 ## Overview
 
-![Untitled copy copy-3](https://user-images.githubusercontent.com/49964975/184062845-314f41a5-8481-4d46-9ab0-9a65f26bfabe.png)
+
+![Untitled copy copy-4](https://user-images.githubusercontent.com/49964975/184063523-a1dfe4a2-efd5-4264-85f0-e4688d16a98b.png)
+
 
 
 ## Worflow
@@ -41,18 +43,16 @@ These computational methodologies represent a step forward in finding effective 
 
 
 
-
-
-
 ## Available codes
 
 Code for each analysis are deposited as individual notebooks in the following folders. 
-01.  `ALS signature using S-PrediXcan`
+
+**(1) ALS signature using S-PrediXcan
 
 
-02. `Repurposable drugs using SignatureSearch`
+**(2) Repurposable drugs using SignatureSearch
 
 
-03. `Mendelian Randomization using TwoSampleMR`
+**(3)Mendelian Randomization using TwoSampleMR
 
 
