@@ -37,7 +37,7 @@ These workflow follows three steps:
 
 
 
-![This is an image](/sarasaezALS/ALS-Drug-Repositioning/Furosemide.Figure1.png)
+![This is an image](/assets/images/Furosemide.Figure1.png)
 
 ## Available codes
 
