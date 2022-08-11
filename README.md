@@ -36,7 +36,7 @@ These workflow follows three steps:
 **(4) Replication using Electronic Health Records (EHR)**
 
 
-![Screen Shot 2022-07-25 at 9 13 33 AM](https://user-images.githubusercontent.com/49964975/184062312-423b397b-4543-4964-9e12-39deade90a64.png)
+
 
 
 ## Available codes
