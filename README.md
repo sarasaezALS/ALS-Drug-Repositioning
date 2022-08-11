@@ -47,10 +47,10 @@ These computational methodologies represent a step forward in finding effective 
 
 Code for each analysis are deposited as individual notebooks in the following folders. 
 
-**(1) ALS signature using S-PrediXcan**
+(1) ALS signature using S-PrediXcan
 
-**(2) Repurposable drugs using SignatureSearch**
+(2) Repurposable drugs using SignatureSearch
 
-**(3)Mendelian Randomization using TwoSampleMR**
+(3) Mendelian Randomization using TwoSampleMR
 
 
