@@ -34,7 +34,10 @@ These workflow follows three steps:
 
 
 **(4) Replication using Electronic Health Records (EHR)**
-![This is an image](/assets/images/electrocat.png)
+
+
+
+![This is an image](/assets/images/Furosemide.Figure1.png)
 
 ## Available codes
 
