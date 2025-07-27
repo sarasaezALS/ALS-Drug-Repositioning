@@ -1,0 +1,372 @@
+################################################################################
+# NOTES
+################################################################################
+# This script draws figure 5 which is the mouse brain slice experiments.
+# Written by Bryan Traynor
+# Last updated 23rd July 2025
+# ChatGPT was extensively used to write and check this code.
+
+
+
+################################################################################
+# SET PARAMETERS
+################################################################################
+library(tidyverse)
+library(janitor)
+library(rio)
+library(ggThemeAssist)
+library(colourpicker)
+library(ggannotate)
+library(lme4)         # lmer()
+library(lmerTest)     # p‑values for lmer()
+library(emmeans)      # estimated marginal means & contrasts
+library(broom)        
+library(ggpubr)
+
+setwd(paste0("/Users/traynorb/Documents/Projects",
+             "/drug_discovery_general_ALS/analysis/figure_5_mouse_slices"))
+
+
+
+################################################################################
+# PANEL A
+################################################################################
+
+# -----------------------------------------------------------------------------
+# Load the data
+# -----------------------------------------------------------------------------
+# I received the file "FUR_experiments all data .xlsx" from Luis on
+# 20th April 2025. I designated the original sheet as "raw" and then made
+# three additional working sheets, one for DMSO, one for 4ap, and one for
+# 4ap+furo. 
+# shasum = bcac2fa1e0b6fc400343c17827f2795490df2267
+
+# dmso
+dmso <- import("input/FUR_experiments all data .xlsx",
+                       sheet = "working-dmso") %>%
+  clean_names() %>%
+
+  # pivot longer
+  pivot_longer(cols = -time,    
+               names_to = "cell_number",      
+               values_to = "value") %>%
+  
+  # add label column
+  mutate(condition = "dmso")
+
+
+# Furosemide
+fur <- import("input/FUR_experiments all data .xlsx",
+               sheet = "working-4ap-fur") %>%
+  clean_names() %>%
+  
+  # pivot longer
+  pivot_longer(cols = -time,    
+               names_to = "cell_number",      
+               values_to = "value") %>%
+  
+  # add label column
+  mutate(condition = "4ap+furo")
+
+
+# 4ap
+ap <- import("input/FUR_experiments all data .xlsx",
+              sheet = "working-4ap") %>%
+  clean_names() %>%
+  
+  # pivot longer
+  pivot_longer(cols = -time,    
+               names_to = "cell_number",      
+               values_to = "value") %>%
+  
+  # add label column
+  mutate(condition = "4ap")
+
+
+# bind the dmso, fur and 4ap data into a single dataframe
+data <- rbind(dmso, fur, ap)
+
+
+
+# -----------------------------------------------------------------------------
+# Calculate the averages for the plot
+# -----------------------------------------------------------------------------
+# Calculate the averages, sd, and sem
+data_averaged <- data %>%
+  
+  group_by(time, condition) %>%
+  summarize(average = mean(value, na.rm = TRUE),
+            sd = sd(value, na.rm = TRUE),
+            n = n(),
+            sem = sd/sqrt(n),
+            .groups = "drop") %>%
+  ungroup()
+
+
+# Save the data
+export(x = data, file = "output/data_parsed_v1.xlsx")
+
+
+
+# -----------------------------------------------------------------------------
+# Plot the data
+# -----------------------------------------------------------------------------
+(curve_plot <- ggplot(data = data_averaged, 
+                             aes(x=time, y=average, 
+                                 color=condition, group=condition)) +
+  geom_line(linewidth = 0.5) +
+  geom_point(size = 1.5) +
+  geom_errorbar(aes(ymin = average - sem, ymax = average + sem), width = 0.01,
+                position = position_dodge(width = 0)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0.74, 1.54)) +
+  scale_x_continuous(breaks = c(0, 5, 10, 15, 20, 30, 40),
+                     labels = c("0", "5", "10", "15",
+                                "20", "30", "40 minutes")) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", 
+             size = 0.1) +
+  labs(x = "Time (minutes)",
+       y = "Average firing rate (normalized)") +
+  scale_color_manual(values = c("4ap" = "#BC3C29FF",
+                              "4ap+furo" = "#0072B5FF",
+                              "dmso" = "grey50"),
+                     labels = c("4ap" = "4-AP",
+                                "4ap+furo" = "4-AP + furosemide",
+                                "dmso" = "Vehicle (0.1% DMSO)")) +
+   guides(fill = guide_legend(byrow = TRUE)) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size = 7),
+        text = element_text(family = "Helvetica"),
+        axis.text = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.title = element_text(size = 7, face = "plain"),
+        axis.line = element_line(colour = "black", size = 0.25),
+        axis.ticks = element_line(linewidth = 0.25),
+        legend.position = c(0.015, 1.0),    # x = 0 (left), y = 1 (top)
+        legend.justification = c(0, 1), 
+        legend.key.spacing.y = unit(-0.2, "cm")) )
+
+
+
+################################################################################
+# PANEL B
+################################################################################
+
+
+# -----------------------------------------------------------------------------
+# Run statistical analysis on the data
+# -----------------------------------------------------------------------------
+# Random intercept for each cell (they are measured repeatedly in time)
+m <- lmer(value ~ condition * time +        # condition × time interaction
+            (1 | cell_number),              #   ← random effect
+          data = data)
+
+
+# This compares the curves overall
+anova(m)          # ‘condition:time’ term = overall curve difference
+
+
+# This performs pairwise contrasts at each time-point 
+# (with FDR correction) within the curve
+emm  <- emmeans(m, ~ condition | time)          # LS‑means per condition & time
+ct   <- contrast(emm, method = "revpairwise",   # 4AP vs 4AP+Furo at each time
+                 adjust = "BH")                 # Benjamini–Hochberg
+summary(ct)
+
+
+# This performs t-tests at each time point, adjusting the p-value
+# This is for the 4ap versus 4ap+furosemide comparisons
+tt <- data %>%
+  filter(condition %in% c("4ap","4ap+furo")) %>%
+  filter(time != "0") %>% # The values at 0 are all the same causing a crash
+  group_by(time) %>%
+  do(tidy(t.test(value ~ condition, data = .))) %>%
+  ungroup() %>%
+  mutate(p_adj = p.adjust(p.value, method = "BH"))
+
+print(tt, width = Inf)
+
+
+# This performs t-tests at each time point, adjusting the p-value
+# This is for the dmso versus 4ap+furo comparisons
+uu <- data %>%
+  filter(condition %in% c("dmso","4ap+furo")) %>%
+  filter(time != "0") %>% # The values at 0 are all the same causing a crash
+  group_by(time) %>%
+  do(tidy(t.test(value ~ condition, data = .))) %>%
+  ungroup() %>%
+  mutate(p_adj = p.adjust(p.value, method = "BH"))
+
+print(uu, width = Inf)
+
+
+
+# -----------------------------------------------------------------------------
+# Create the function for plotting
+# -----------------------------------------------------------------------------
+draw_barchart <- function(timepoint) {
+  
+  # Get the ymax for the 4AP versus 4AP+furo bracket
+  ymax <- data %>%
+    filter(time == timepoint) %>%
+    pull(value) %>%
+    max(na.rm = TRUE)
+  
+  # Get the ymax for the furosomide versus dmso bracket
+  ymax2 <- data %>%
+    filter(time == timepoint) %>%
+    filter(condition != "4ap") %>%
+    pull(value) %>%
+    max(na.rm = TRUE)
+  
+  # Get the details for the 4AP versus 4AP+furo bracket
+  anno10 <- tt %>%                      
+    filter(time == timepoint) %>%            
+    mutate(# add the two endpoints
+      group1     = "4ap",
+      group2     = "4ap+furo",
+      # vertical position ~ 10% above the max
+      y.position = ymax * 1.1,
+      # format your label however you like
+      annotation = paste0("p = ", signif(p_adj, 2)) )
+  
+  # Get the details for the furosomide versus dmso bracket
+  anno20 <- uu %>%                      
+    filter(time == timepoint) %>%            
+    mutate(# add the two endpoints
+      group1     = "dmso",
+      group2     = "4ap+furo",
+      # vertical position ~ 10% above the max
+      y.position = ymax2 * 1.1,
+      # format your label however you like
+      annotation = paste0("p = ", signif(p_adj, 2)) )
+  
+  # Plot
+  ggplot(data %>% filter(time == timepoint),
+         aes(x = condition, y = value, fill = condition)) +
+    
+    # mean bars
+    stat_summary(fun   = mean, geom  = "col", width = 0.6, colour = NA,
+                 alpha = 0.25) +
+    
+    # raw points
+    geom_jitter(aes(colour = condition), width = 0.2, size = 1.5,
+                alpha = 0.8, show.legend = FALSE) +
+    
+    # SEM error bars
+    stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2,
+                 linewidth = 0.35, color = "#3d3d3d") +
+    
+    # your manual colors
+    scale_color_manual(values = c("4ap"      = "#BC3C29FF",
+                                  "4ap+furo" = "#0072B5FF",
+                                  "dmso"     = "grey50")) +
+    
+    scale_fill_manual(values = c("4ap"      = "#BC3C29FF",
+                                 "4ap+furo" = "#0072B5FF",
+                                 "dmso"     = "grey50")) +
+    
+    # This draws the 4ap versus 4ap+furosomide bracket
+    stat_pvalue_manual(data = anno10, label = "annotation",
+                       y.position  = "y.position", tip.length  = 0.05, 
+                       bracket.size= 0.25,
+                       inherit.aes = FALSE,
+                       label.size = 2.5) +
+    
+    # This draws the furososemide versus dmso bracket
+    stat_pvalue_manual(data = anno20, label = "annotation",
+                       y.position  = "y.position", tip.length  = 0.05, 
+                       bracket.size= 0.25,
+                       inherit.aes = FALSE,
+                       label.size = 2.5) +
+    
+    labs(y = "Firing rate (normalized)", 
+         title = paste0(timepoint, " minutes")) +
+    
+    scale_y_continuous(limits = c(0, 4.3), 
+                       expand = c(0,0),
+                       labels = c("0.0", "1.0", "2.0", "3.0", "4.0")) +
+    scale_x_discrete(labels = c("4ap" = "4-AP", 
+                                "4ap+furo" = "4-AP +\nfurosemide",
+                                "dmso" = "DMSO" )) +
+    theme_bw() +
+    theme(plot.title = element_blank(),
+          axis.text.x = element_text(hjust = 0.5, size = 7),
+          axis.title.x = element_blank(),
+          legend.position = "none",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          text = element_text(family = "Helvetica"),
+          axis.text.y = element_text(size = 7),
+          axis.title = element_text(size = 7, face = "plain"),
+          axis.line    = element_line(colour = "black", size = 0.25),
+          axis.ticks = element_line(linewidth = 0.25),
+          panel.border = element_blank())
+}
+
+
+# -----------------------------------------------------------------------------
+# Call the function
+# -----------------------------------------------------------------------------
+# Call the function to draw the plot for the 20-minute timepoint.
+# This point was chosen as it was maximal.
+(minute_20 <- draw_barchart(timepoint = 20) )
+
+
+
+
+
+################################################################################
+# COMBINE THE PLOTS
+################################################################################
+library(cowplot)
+
+# draw the bottom row
+spacer <- ggdraw() + theme(plot.margin = margin(0, 0, 0, 0))
+
+bottom_row <- plot_grid(
+  minute_20, spacer,
+  ncol = 2,
+  rel_widths = c(1.0, 1.0),
+  labels = c("b", "c"),
+  label_x = c(-0.01, -0.01),
+  label_y = c(1.01, 1.01),
+  label_size = 10,
+  align = "v",
+  axis = "l"
+)
+
+# combine the plots
+combined_plot <- plot_grid(
+  curve_plot,
+  NULL,
+  bottom_row,
+  ncol = 1,
+  rel_heights = c(1.0, 0.1, 1.0),
+  labels = c("a", "", ""),
+  label_x = c(-0.01, NA, NA),
+  label_y = c(1.01, NA, NA),
+  label_size = 10,
+  hjust = -1,
+  vjust = 1
+)
+
+print(combined_plot)
+
+ggsave(filename = "output/figure_5_mouse_slice_v9.pdf",
+       width = 6, height = 6)
+
+
+# -----------------------------------------------------------------------------
+# Changes in Illustrator
+# -----------------------------------------------------------------------------
+# Draw the grey triangle using the nib tool.
+# Italicize the p annotation in panel B.
+# Superscript the -6 in the annotation in panel B.
+# Draw in the grey box around the plot in panel B (looks nicer than what
+# ggplot does).
+# Add in the photograph for panel C. Note that I received this as a 
+# PowerPoint slide in an email from Luis on 19th July 2025.
+
+
+
